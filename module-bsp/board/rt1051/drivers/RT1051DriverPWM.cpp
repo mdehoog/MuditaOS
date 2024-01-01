@@ -10,7 +10,7 @@ namespace drivers
 {
     namespace
     {
-        constexpr pwm_mode_t pwmMode = kPWM_SignedCenterAligned;
+        constexpr pwm_mode_t pwmMode = kPWM_SignedEdgeAligned;
     }
 
     RT1051DriverPWM::RT1051DriverPWM(PWMInstances inst, PWMModules mod, const DriverPWMParams &params)
@@ -64,14 +64,14 @@ namespace drivers
         PWM_GetDefaultConfig(&pwmConfig);
         PWM_Init(base, pwmModule, &pwmConfig);
 
-        SetupPWMChannel(parameters.channel);
+        SetupPWMChannel(parameters.channel, parameters.frequency);
         Start(parameters.channel);
     }
 
     void RT1051DriverPWM::InitNextChannel(const DriverPWMParams &params)
     {
         LOG_INFO("Channel from this PWM module already enabled - PWM will use parameters from initial config");
-        SetupPWMChannel(params.channel);
+        SetupPWMChannel(params.channel, params.frequency);
         Start(params.channel);
     }
 
@@ -93,8 +93,12 @@ namespace drivers
             }
         }
 
-        PWM_UpdatePwmDutycycle(base, pwmModule, pwmChannel, pwmMode, dutyCycle);
+        setDutyCycleWithReloadValue(dutyCycle, pwmChannel);
         PWM_SetPwmLdok(base, 1 << pwmModule, true);
+    }
+
+    void RT1051DriverPWM::SetDutyCycleToReloadValue(std::uint16_t (*dutyCycleToReloadValue)(std::uint8_t)) {
+        this->dutyCycleToReloadValue = dutyCycleToReloadValue;
     }
 
     void RT1051DriverPWM::Start(PWMChannel channel)
@@ -125,7 +129,7 @@ namespace drivers
         }
     }
 
-    void RT1051DriverPWM::SetupPWMChannel(PWMChannel channel)
+    void RT1051DriverPWM::SetupPWMChannel(PWMChannel channel, std::uint32_t pwmFreq_Hz)
     {
         if (channelNotEnabled(channel)) {
             auto currentInstance = enabledChannels.size();
@@ -138,7 +142,7 @@ namespace drivers
             pwmSignalsConfig[currentInstance].faultState       = kPWM_PwmFaultState0;
 
             clockFrequency = DEFAULT_SYSTEM_CLOCK;
-            SetupPWMInstance(&pwmSignalsConfig[currentInstance], 1, clockFrequency);
+            SetupPWMInstance(&pwmSignalsConfig[currentInstance], 1, clockFrequency, pwmFreq_Hz);
 
             PWM_SetupFaultDisableMap(base, pwmModule, pwmChannel, kPWM_faultchannel_0, 0);
 
@@ -152,9 +156,10 @@ namespace drivers
 
     void RT1051DriverPWM::SetupPWMInstance(pwm_signal_param_t *config,
                                            unsigned numOfChannels,
-                                           std::uint32_t _clockFrequency)
+                                           std::uint32_t _clockFrequency,
+                                           std::uint32_t pwmFreq_Hz)
     {
-        PWM_SetupPwm(base, pwmModule, config, numOfChannels, pwmMode, parameters.frequency, _clockFrequency);
+        PWM_SetupPwm(base, pwmModule, config, numOfChannels, pwmMode, pwmFreq_Hz, _clockFrequency);
     }
 
     void RT1051DriverPWM::ForceLowOutput(PWMChannel channel)
@@ -169,13 +174,13 @@ namespace drivers
         base->SM[pwmModule].CTRL2 |= PWM_CTRL2_FORCE(1U);
     }
 
-    void RT1051DriverPWM::UpdateClockFrequency(bsp::CpuFrequencyMHz newFrequency)
+    void RT1051DriverPWM::UpdateClockFrequency(bsp::CpuFrequencyMHz newFrequency, std::uint32_t pwmFreq_Hz)
     {
         cpp_freertos::LockGuard lock(frequencyChangeMutex);
         const auto convertedFrequency = static_cast<std::uint32_t>(newFrequency) * bsp::HzPerMHz;
 
         if (clockFrequency != convertedFrequency) {
-            SetupPWMInstance(pwmSignalsConfig.data(), enabledChannels.size(), convertedFrequency);
+            SetupPWMInstance(pwmSignalsConfig.data(), enabledChannels.size(), convertedFrequency, pwmFreq_Hz);
             if (GetPwmState() == PwmState::On) {
                 stopAll();
                 restoreDutyCycle();
@@ -243,9 +248,16 @@ namespace drivers
     void RT1051DriverPWM::restoreDutyCycle()
     {
         for (unsigned i = 0; i < enabledChannels.size(); ++i) {
-            PWM_UpdatePwmDutycycle(
-                base, pwmModule, pwmSignalsConfig[i].pwmChannel, pwmMode, pwmSignalsConfig[i].dutyCyclePercent);
+            setDutyCycleWithReloadValue(pwmSignalsConfig[i].dutyCyclePercent, pwmSignalsConfig[i].pwmChannel);
             PWM_SetPwmLdok(base, 1 << pwmModule, true);
+        }
+    }
+
+    void RT1051DriverPWM::setDutyCycleWithReloadValue(std::uint8_t dutyCyclePercent, pwm_channels_t pwmChannel) {
+        if (dutyCycleToReloadValue != nullptr) {
+            PWM_UpdatePwmDutycycleHighAccuracy(base, pwmModule, pwmChannel, pwmMode, dutyCycleToReloadValue(dutyCyclePercent));
+        } else {
+            PWM_UpdatePwmDutycycle(base, pwmModule, pwmChannel, pwmMode, dutyCyclePercent);
         }
     }
 

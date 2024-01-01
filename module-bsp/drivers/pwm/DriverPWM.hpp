@@ -57,11 +57,13 @@ namespace drivers
         // Duty cycle in percent: 0 - 100
         virtual void SetDutyCycle(std::uint8_t duty_cycle, PWMChannel channel) = 0;
 
+        virtual void SetDutyCycleToReloadValue(std::uint16_t (*dutyCycleToReloadValue)(std::uint8_t)) = 0;
+
         virtual void Start(PWMChannel channel) = 0;
 
         virtual void Stop(PWMChannel channel) = 0;
 
-        virtual void UpdateClockFrequency(bsp::CpuFrequencyMHz newFrequency) = 0;
+        virtual void UpdateClockFrequency(bsp::CpuFrequencyMHz newFrequency, std::uint32_t pwmFreq_Hz) = 0;
 
       protected:
         PWMInstances instance;

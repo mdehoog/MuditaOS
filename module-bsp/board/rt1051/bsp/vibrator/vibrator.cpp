@@ -48,7 +48,7 @@ namespace bsp
         void updateClockFrequency(CpuFrequencyMHz newFrequency)
         {
             if (pwm) {
-                pwm->UpdateClockFrequency(newFrequency);
+                pwm->UpdateClockFrequency(newFrequency, PWM_FREQUENCY_HZ);
             }
         }
 

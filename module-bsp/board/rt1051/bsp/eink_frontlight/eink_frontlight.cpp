@@ -10,8 +10,15 @@ namespace bsp::eink_frontlight
 {
     namespace
     {
+        constexpr auto minDutyCycle = 2U; // backlight on minimum brightness
+        constexpr auto maxDutyCycle = 65535U;
+        std::uint16_t dutyCycleToReloadValue(std::uint8_t dutyCyclePercent)
+        {
+            return dutyCyclePercent == 0 ? 0U : minDutyCycle + (dutyCyclePercent - 1U) * (maxDutyCycle - minDutyCycle) / 99U;
+        }
+
         std::shared_ptr<drivers::DriverPWM> pwm;
-        constexpr inline auto PWM_FREQUENCY_HZ = 20000;
+        constexpr inline auto PWM_FREQUENCY_HZ = 528000000UL * minDutyCycle / maxDutyCycle;
         float gammaFactor                      = 2.5f;
 
         std::uint8_t gammaCorrection(BrightnessPercentage brightness)
@@ -33,6 +40,7 @@ namespace bsp::eink_frontlight
             static_cast<drivers::PWMInstances>(BoardDefinitions::EINK_FRONTLIGHT_PWM_INSTANCE),
             static_cast<drivers::PWMModules>(BoardDefinitions::EINK_FRONTLIGHT_PWM_MODULE),
             pwmParams);
+        pwm->SetDutyCycleToReloadValue(&dutyCycleToReloadValue);
     }
 
     void deinit()
@@ -64,7 +72,9 @@ namespace bsp::eink_frontlight
 
     void updateClockFrequency(CpuFrequencyMHz newFrequency)
     {
-        pwm->UpdateClockFrequency(newFrequency);
+        const auto convertedFrequency = static_cast<std::uint32_t>(newFrequency) * bsp::HzPerMHz;
+        std::uint32_t pwmFreq_Hz = convertedFrequency * minDutyCycle / maxDutyCycle;
+        pwm->UpdateClockFrequency(newFrequency, pwmFreq_Hz);
     }
 
 } // namespace bsp::eink_frontlight

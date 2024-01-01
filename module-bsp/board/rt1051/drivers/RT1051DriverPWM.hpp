@@ -26,11 +26,13 @@ namespace drivers
 
         void SetDutyCycle(std::uint8_t dutyCyclePercent, PWMChannel channel) final;
 
+        void SetDutyCycleToReloadValue(std::uint16_t (*dutyCycleToReloadValue)(std::uint8_t)) final;
+
         void Start(PWMChannel channel) final;
 
         void Stop(PWMChannel channel) final;
 
-        void UpdateClockFrequency(bsp::CpuFrequencyMHz newFrequency) final;
+        void UpdateClockFrequency(bsp::CpuFrequencyMHz newFrequency, std::uint32_t pwmFreq_Hz) final;
 
         enum class PwmState
         {
@@ -41,9 +43,9 @@ namespace drivers
       private:
         PwmState GetPwmState();
 
-        void SetupPWMChannel(PWMChannel channel);
+        void SetupPWMChannel(PWMChannel channel, std::uint32_t pwmFreq_Hz);
 
-        void SetupPWMInstance(pwm_signal_param_t *config, unsigned numOfChannels, std::uint32_t clockFrequency);
+        void SetupPWMInstance(pwm_signal_param_t *config, unsigned numOfChannels, std::uint32_t clockFrequency, std::uint32_t pwmFreq_Hz);
 
         void ForceLowOutput(PWMChannel channel);
 
@@ -61,6 +63,8 @@ namespace drivers
 
         void restoreDutyCycle();
 
+        void setDutyCycleWithReloadValue(std::uint8_t dutyCyclePercent, pwm_channels_t channel);
+
         PWM_Type *base = nullptr;
 
         pwm_submodule_t pwmModule = kPWM_Module_0;
@@ -76,6 +80,8 @@ namespace drivers
         cpp_freertos::MutexStandard frequencyChangeMutex;
 
         std::uint32_t clockFrequency = 0;
+
+        std::uint16_t (*dutyCycleToReloadValue)(std::uint8_t) = nullptr;
     };
 
 } // namespace drivers
