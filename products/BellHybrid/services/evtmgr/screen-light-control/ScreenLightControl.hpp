@@ -70,7 +70,7 @@ namespace bell::screen_light_control
 
         static constexpr inline auto CONTROL_TIMER_MS = 25;
         static constexpr inline auto RAMP_STEP_PER_MS = 0.1;
-        static constexpr inline auto MINIMAL_TARGET   = 15;
+        static constexpr inline auto MINIMAL_TARGET   = 0;
 
         sys::TimerHandle controlTimer;
         std::shared_ptr<sys::CpuSentinel> cpuSentinel;

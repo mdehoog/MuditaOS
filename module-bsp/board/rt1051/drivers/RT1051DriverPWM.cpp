@@ -10,7 +10,7 @@ namespace drivers
 {
     namespace
     {
-        constexpr pwm_mode_t pwmMode = kPWM_SignedEdgeAligned;
+        constexpr pwm_mode_t pwmMode = kPWM_SignedCenterAligned;
     }
 
     RT1051DriverPWM::RT1051DriverPWM(PWMInstances inst, PWMModules mod, const DriverPWMParams &params)
@@ -255,7 +255,17 @@ namespace drivers
 
     void RT1051DriverPWM::setDutyCycleWithReloadValue(std::uint8_t dutyCyclePercent, pwm_channels_t pwmChannel) {
         if (dutyCycleToReloadValue != nullptr) {
-            PWM_UpdatePwmDutycycleHighAccuracy(base, pwmModule, pwmChannel, pwmMode, dutyCycleToReloadValue(dutyCyclePercent));
+//            PWM_UpdatePwmDutycycleHighAccuracy(base, pwmModule, pwmChannel, pwmMode, dutyCycleToReloadValue(dutyCyclePercent));
+            if (pwmChannel == kPWM_PwmA)
+            {
+                base->SM[pwmModule].VAL2 = 0;
+                base->SM[pwmModule].VAL3 = dutyCycleToReloadValue(dutyCyclePercent);
+            }
+            else
+            {
+                base->SM[pwmModule].VAL4 = 0;
+                base->SM[pwmModule].VAL5 = dutyCycleToReloadValue(dutyCyclePercent);
+            }
         } else {
             PWM_UpdatePwmDutycycle(base, pwmModule, pwmChannel, pwmMode, dutyCyclePercent);
         }

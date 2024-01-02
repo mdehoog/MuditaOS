@@ -60,7 +60,7 @@ namespace bell::screen_light_control
     void ScreenLightController::controlTimerCallback()
     {
         auto newBrightness = ::screen_light_control::functions::brightnessRampOut();
-        bsp::eink_frontlight::setBrightness(newBrightness);
+        bsp::eink_frontlight::setBrightness(::screen_light_control::functions::getRampState());
 
         if (::screen_light_control::functions::isRampTargetReached()) {
             if (!automaticModeFunctions.empty()) {

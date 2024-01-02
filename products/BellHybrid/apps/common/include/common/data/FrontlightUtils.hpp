@@ -10,12 +10,12 @@ namespace frontlight_utils
 {
     namespace
     {
-        static constexpr auto minPercent                       = 0.0f;
-        static constexpr auto maxPercent                       = 100.0f;
-        static constexpr auto minimumLightOnPercentOffsetValue = 16.0f;
-        static constexpr auto minBrightness                    = 1U;
-        static constexpr auto maxBrightness                    = 10U;
-        static constexpr float multiplier = (maxPercent - minimumLightOnPercentOffsetValue) / maxBrightness;
+//        static constexpr auto minPercent                       = 0.0f;
+//        static constexpr auto maxPercent                       = 100.0f;
+//        static constexpr auto minimumLightOnPercentOffsetValue = 16.0f;
+//        static constexpr auto minBrightness                    = 1U;
+//        static constexpr auto maxBrightness                    = 10U;
+//        static constexpr float multiplier = (maxPercent - minimumLightOnPercentOffsetValue) / maxBrightness;
     } // namespace
 
     /// 1-10 range
@@ -23,14 +23,16 @@ namespace frontlight_utils
 
     static inline float fixedValToPercentage(Brightness value)
     {
-        float scaled = minimumLightOnPercentOffsetValue + (value - minBrightness) * multiplier;
-        return std::min(maxPercent, std::max(minPercent, scaled));
+        //float scaled = minimumLightOnPercentOffsetValue + (value - minBrightness) * multiplier;
+        //return std::min(maxPercent, std::max(minPercent, scaled));
+        return value;
     }
 
     static inline Brightness percentageToFixedVal(float percent)
     {
-        auto value = (percent - minimumLightOnPercentOffsetValue) / multiplier;
-        return std::round(value + minBrightness);
+        //auto value = (percent - minimumLightOnPercentOffsetValue) / multiplier;
+        //return std::round(value + minBrightness);
+        return std::round(percent);
     }
 
 } // namespace frontlight_utils

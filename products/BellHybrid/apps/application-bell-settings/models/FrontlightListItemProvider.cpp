@@ -11,8 +11,8 @@ namespace app::bell_settings
 {
     void FrontlightListItemProvider::buildListItems()
     {
-        constexpr auto brightnessMin  = 1U;
-        constexpr auto brightnessMax  = 10U;
+        constexpr auto brightnessMin  = 0U;
+        constexpr auto brightnessMax  = 100U;
         constexpr auto brightnessStep = 1U;
         constexpr auto itemCount      = 2U;
         internalData.reserve(itemCount);

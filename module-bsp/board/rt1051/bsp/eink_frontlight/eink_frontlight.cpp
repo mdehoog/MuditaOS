@@ -14,7 +14,8 @@ namespace bsp::eink_frontlight
         constexpr auto maxDutyCycle = 65535U;
         std::uint16_t dutyCycleToReloadValue(std::uint8_t dutyCyclePercent)
         {
-            return dutyCyclePercent == 0 ? 0U : minDutyCycle + (dutyCyclePercent - 1U) * (maxDutyCycle - minDutyCycle) / 99U;
+            //return dutyCyclePercent == 0 ? 0U : minDutyCycle * 2 + (dutyCyclePercent - 1U) * (maxDutyCycle - minDutyCycle * 2) / 99U;
+            return dutyCyclePercent < 50 ? 0U : dutyCyclePercent - 50U;
         }
 
         std::shared_ptr<drivers::DriverPWM> pwm;
@@ -24,7 +25,8 @@ namespace bsp::eink_frontlight
         std::uint8_t gammaCorrection(BrightnessPercentage brightness)
         {
             std::clamp(brightness, 0.0f, 100.0f);
-            return static_cast<std::uint8_t>(100 * std::pow((brightness / 100.0f), gammaFactor));
+//            return static_cast<std::uint8_t>(100 * std::pow((brightness / 100.0f), gammaFactor));
+            return static_cast<std::uint8_t>(brightness);
         }
         constexpr auto pwmChannel = static_cast<drivers::PWMChannel>(BoardDefinitions::EINK_FRONTLIGHT_PWM_CHANNEL);
 
